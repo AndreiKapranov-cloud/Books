@@ -1,78 +1,56 @@
 var express = require('express');
 var router = express.Router();
-var dbConn  = require('../lib/db');
+var dbConn = require('../lib/db');
+let language_parameter = '{language_id}';
+var queryFunction = 'SELECT COALESCE(localization.title_translation, books.title) as title ' +
+    'FROM books ' +
+    'join language ' +
+    'LEFT JOIN localization ON localization.book_id = books.book_id ' +
+    'and localization.language_id = language.language_id ' +
+    "WHERE language.language_id = " + language_parameter + " OR language.language_id IS NULL " +
+    "order by books.book_id";
+
+function processResult(req, res, err, rows) {
+    if (err) {
+        req.flash('error', err);
+        // render to views/books/index.ejs
+        res.render('books', {data: ''});
+    } else {
+        // render to views/books/index.ejs
+        res.render('books', {data: rows});
+    }
+}
 
 // display books page
-router.get('/', function(req, res, next) {
+router.get('/', function (req, res) {
 
-    dbConn.query('select * from books',function(err,rows)     {
+    dbConn.query('select * from books', function (err, rows) {
 
-        if(err) {
-            req.flash('error', err);
-            // render to views/books/index.ejs
-            res.render('books',{data:''});
-        } else {
-            // render to views/books/index.ejs
-            res.render('books',{data:rows});
-        }
+        processResult(req, res, err, rows);
     });
 });
 //display pl page
-router.get('/pl', function(req, res, next) {
+router.get('/pl', function (req, res) {
 
-    dbConn.query('select COALESCE (nullif(title_translation,\'\'), books.title)\n' +
-        'AS title\n' +
-        'from language join localization on language.language_id=localization.language_id\n' +
-        'join books on books.book_id=localization.book_id where language = "pl"',function(err,rows)     {
+    dbConn.query(queryFunction.replace(language_parameter, '1'), function (err, rows) {
 
-        if(err) {
-            req.flash('error', err);
-            // render to views/books/index.ejs
-            res.render('books',{data:''});
-        } else {
-            // render to views/books/index.ejs
-            res.render('books',{data:rows});
-        }
-    });
-});
-//display ru page
-router.get('/ru', function(req, res, next) {
-
-    dbConn.query('select COALESCE (nullif(title_translation,\'\'), books.title)\n' +
-        'AS title\n' +
-        'from language join localization on language.language_id=localization.language_id\n' +
-        'join books on books.book_id=localization.book_id where language = "ru"',function(err,rows)     {
-
-        if(err) {
-            req.flash('error', err);
-            // render to views/books/index.ejs
-            res.render('books',{data:''});
-        } else {
-            // render to views/books/index.ejs
-            res.render('books',{data:rows});
-        }
+        processResult(req, res, err, rows);
     });
 });
 //display by page
-router.get('/by', function(req, res, next) {
+router.get('/ru', function (req, res) {
 
-    dbConn.query('select COALESCE (nullif(title_translation,\'\'), books.title)\n' +
-        'AS title\n' +
-        'from language join localization on language.language_id=localization.language_id\n' +
-        'join books on books.book_id=localization.book_id where language = "by"',function(err,rows)     {
-
-        if(err) {
-            req.flash('error', err);
-            // render to views/books/index.ejs
-            res.render('books',{data:''});
-        } else {
-            // render to views/books/index.ejs
-            res.render('books',{data:rows});
-        }
+    dbConn.query(queryFunction.replace(language_parameter, '2'), function (err, rows) {
+        processResult(req, res, err, rows);
     });
 });
+//display ru page
+router.get('/by', function (req, res) {
 
-
+    dbConn.query(queryFunction.replace(language_parameter, '3'), function (err, rows) {
+        processResult(req, res, err, rows);
+    });
+});
 
 
 module.exports = router;
